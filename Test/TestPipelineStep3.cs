@@ -1,6 +1,6 @@
 ﻿#nullable enable
 
-namespace NW.ManyQueues {
+namespace NW.ManyQueues.Test {
     class TestPipelineStep3: IPipeline<Token> {
         Token _Token = new Token();
 

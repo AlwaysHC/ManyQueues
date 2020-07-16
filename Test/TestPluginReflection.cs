@@ -4,7 +4,7 @@ using System.Text;
 
 #nullable enable
 
-namespace NW.ManyQueues {
+namespace NW.ManyQueues.Test {
     class TestPluginReflection: IPluginStep1 {
         public TestPluginReflection() {
         }

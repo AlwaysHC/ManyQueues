@@ -11,11 +11,11 @@ namespace NW.ManyQueues {
         bool DeclarePlugin<TPlugin>(string name) where TPlugin : IPlugin;
         void SubscribePlugin<TPlugin>(string name, TPlugin pluginClass) where TPlugin : IPlugin;
         void LoadPlugins<TPlugin>(string name) where TPlugin : IPlugin;
-        IList<ParallelFirePluginResult<TReturn>> FirePlugin<TCaller, TReturn, TParam1>(TCaller caller, string name);
+        IList<ParallelFirePluginResult<TReturn>> FirePlugin<TCaller, TReturn>(TCaller caller, string name);
         IList<ParallelFirePluginResult<TReturn>> FirePlugin<TCaller, TReturn, TParam1>(TCaller caller, string name, TParam1 param1);
         IList<ParallelFirePluginResult<TReturn>> FirePlugin<TCaller, TReturn, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2);
         IList<ParallelFirePluginResult<TReturn>> FirePlugin<TCaller, TReturn, TParam1, TParam2, TParam3>(TCaller caller, string name, TParam1 param1, TParam2 param2, TParam3 param3);
-        IList<FirePluginResult> FirePlugin<TCaller, TParam1>(TCaller caller, string name);
+        IList<FirePluginResult> FirePlugin<TCaller>(TCaller caller, string name);
         IList<FirePluginResult> FirePlugin<TCaller, TParam1>(TCaller caller, string name, TParam1 param1);
         IList<FirePluginResult> FirePlugin<TCaller, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2);
         IList<FirePluginResult> FirePlugin<TCaller, TParam1, TParam2, TParam3>(TCaller caller, string name, TParam1 param1, TParam2 param2, TParam3 param3);
@@ -50,7 +50,7 @@ namespace NW.ManyQueues {
             return _DeclaredPluginList.TryAdd(name, typeof(TPlugin));
         }
 
-        public IList<ParallelFirePluginResult<TReturn>> FirePlugin<TCaller, TReturn, TParam1>(TCaller caller, string name) {
+        public IList<ParallelFirePluginResult<TReturn>> FirePlugin<TCaller, TReturn>(TCaller caller, string name) {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} Start");
 
             IList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
@@ -65,7 +65,7 @@ namespace NW.ManyQueues {
 
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} End");
 
-                FirePluginResult? Result = (FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { R! });
+                FirePluginResult? Result = (FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { null! });
                 lock (Lock) {
                     R.Add(new ParallelFirePluginResult<TReturn>(Result, Return));
                 }
@@ -91,7 +91,8 @@ namespace NW.ManyQueues {
 
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} End");
 
-                FirePluginResult? Result = (FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { R! });
+
+                FirePluginResult? Result = (FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { null! });
                 lock (Lock) {
                     R.Add(new ParallelFirePluginResult<TReturn>(Result, Return));
                 }
@@ -117,7 +118,7 @@ namespace NW.ManyQueues {
 
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} End");
 
-                FirePluginResult? Result = (FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { R! });
+                FirePluginResult? Result = (FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { null! });
                 lock (Lock) {
                     R.Add(new ParallelFirePluginResult<TReturn>(Result, Return));
                 }
@@ -143,7 +144,7 @@ namespace NW.ManyQueues {
 
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} End");
 
-                FirePluginResult? Result = (FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { R! });
+                FirePluginResult? Result = (FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { null! });
                 lock (Lock) {
                     R.Add(new ParallelFirePluginResult<TReturn>(Result, Return));
                 }
@@ -154,7 +155,7 @@ namespace NW.ManyQueues {
             return R;
         }
 
-        public IList<FirePluginResult> FirePlugin<TCaller, TParam1>(TCaller caller, string name) {
+        public IList<FirePluginResult> FirePlugin<TCaller>(TCaller caller, string name) {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} Start");
 
             IList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
@@ -170,7 +171,7 @@ namespace NW.ManyQueues {
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} End");
 
                 lock (Lock) {
-                    R.Add((FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { R! })!);
+                    R.Add((FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { null! })!);
                 }
             }
 
@@ -195,7 +196,7 @@ namespace NW.ManyQueues {
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} End");
 
                 lock (Lock) {
-                    R.Add((FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { R! })!);
+                    R.Add((FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { null! })!);
                 }
             }
 
@@ -220,7 +221,7 @@ namespace NW.ManyQueues {
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} End");
 
                 lock (Lock) {
-                    R.Add((FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { R! })!);
+                    R.Add((FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { null! })!);
                 }
             }
 
@@ -245,7 +246,7 @@ namespace NW.ManyQueues {
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} End");
 
                 lock (Lock) {
-                    R.Add((FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { R! })!);
+                    R.Add((FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { null! })!);
                 }
             }
 

@@ -4,9 +4,13 @@ using System.Text;
 
 #nullable enable
 
-namespace NW.ManyQueues {
+namespace NW.ManyQueues.Test {
     class TestPluginConstructor: IPluginStep1 {
         private readonly IPluginManager _SM;
+
+        public TestPluginConstructor(IParallelPluginManager subscriptionManager) {
+            _SM = new PluginManager(null, null);
+        }
 
         public TestPluginConstructor(IPluginManager subscriptionManager) {
             _SM = subscriptionManager;
