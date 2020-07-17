@@ -6,9 +6,8 @@ using System.Reflection;
 #nullable enable
 
 namespace NW.ManyQueues {
-#warning Possibilità di iniettare valori dall'esterno
-#warning Integrare Plugin e ParallelPlugin
-#warning I vari manager devono avere dei metodi per salvare dei dati configurazione e per leggere tali valori all'interno degli oggetti creati (che ricevono I*Manager nel costruttore)
+    //TODO Possibilità di iniettare valori dall'esterno
+    //TODO Integrare Plugin e ParallelPlugin
 
     //TODO Funzionamento:
     //TODO - Plugin: un oggetto definisce dei punti di ingresso dove altre classi possono intervenire. Coda sugli eventi
