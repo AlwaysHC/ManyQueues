@@ -21,7 +21,7 @@ namespace NW.ManyQueues {
         public void WriteSingleData<TData>(string name, TData data);
         public void StartBatchWrite(string name);
         public void WriteBatchData<TData>(string name, TData data);
-        public void EndBatchWrite(string name, bool allData);
+        public void EndBatchWrite(string name, bool allData = true);
         public bool DeleteData(string name);
     }
 
@@ -99,7 +99,7 @@ namespace NW.ManyQueues {
             _DataList[name].Add(data);
         }
 
-        public void EndBatchWrite(string name, bool allData) {
+        public void EndBatchWrite(string name, bool allData = true) {
             foreach (NameDataReaderMethod NDRM in _SubscribedDataReaderList.Where(SDR => SDR.Name == name)) {
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{name} {allData} Start");
 

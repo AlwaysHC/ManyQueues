@@ -16,7 +16,7 @@ namespace NW.ManyQueues {
     }
 
     public interface IPipelineManager: IManager {
-        bool CreatePipeline<TToken>(string name, Type[] stepsSequence, IPipeline<TToken>[] steps) where TToken : class, new();
+        bool CreatePipeline<TToken>(string name, Type[] stepsSequence, IPipeline<TToken>[]? steps) where TToken : class, new();
         int RunPipeline<TCaller, TToken>(TCaller caller, string name, out TToken token) where TToken : class, new();
         int RunPipeline<TCaller, TToken, TParam1>(TCaller caller, string name, TParam1 param1, out TToken token) where TToken : class, new();
         int RunPipeline<TCaller, TToken, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2, out TToken token) where TToken : class, new();
@@ -36,15 +36,15 @@ namespace NW.ManyQueues {
 
         private readonly IDictionary<string, IList<NamePipeline>> _PipelinesList = new Dictionary<string, IList<NamePipeline>>();
 
-        public bool CreatePipeline<TToken>(string name, Type[] stepsSequence, IPipeline<TToken>[] steps) where TToken : class, new() {
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{name} {typeof(TToken)} {stepsSequence.Length} {steps.Length}");
+        public bool CreatePipeline<TToken>(string name, Type[] stepsSequence, IPipeline<TToken>[]? steps) where TToken : class, new() {
+            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{name} {typeof(TToken)} {stepsSequence.Length} {steps?.Length}");
 
             if (!_PipelinesList.TryAdd(name, new List<NamePipeline>())) {
                 return false;
             }
 
             foreach (Type Type in stepsSequence) {
-                IPipeline<TToken>? Pipeline = steps.FirstOrDefault(S => S.GetType().IsAssignableFrom(typeof(IPipeline<TToken>)));
+                IPipeline<TToken>? Pipeline = steps?.FirstOrDefault(S => S.GetType().IsAssignableFrom(typeof(IPipeline<TToken>)));
                 if (Pipeline == null) {
                     Pipeline = Type.GetConstructors()[0].GetParameters().Length == 1
                         ? (IPipeline<TToken>?)Activator.CreateInstance(Type, this)

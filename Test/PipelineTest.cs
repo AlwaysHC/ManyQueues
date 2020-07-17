@@ -5,10 +5,6 @@ using Xunit;
 #nullable enable
 
 namespace NW.ManyQueues.Test {
-    public interface IPipeplineToken: IPlugin {
-        public bool Step(int number);
-    }
-
     public class PipelineTest {
         readonly static IManager M = new Manager();
         readonly static ILog LOG = new LogFile();
