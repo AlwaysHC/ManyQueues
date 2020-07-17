@@ -38,6 +38,9 @@ namespace NW.ManyQueues {
     }
 
     public class ParallelPluginManager: BaseManager, IParallelPluginManager {
+        public ParallelPluginManager() : base(null, null) {
+        }
+
         public ParallelPluginManager(IManager? manager, ILog? log) : base(manager, log) {
         }
 

@@ -26,6 +26,9 @@ namespace NW.ManyQueues {
     }
 
     public class DataManager: BaseManager, IDataManager {
+        public DataManager() : base(null, null) {
+        }
+
         public DataManager(IManager? manager, ILog? log) : base(manager, log) {
         }
 

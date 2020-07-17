@@ -90,6 +90,9 @@ namespace NW.ManyQueues {
     }
 
     public class PluginManager: BaseManager, IPluginManager {
+        public PluginManager() : base(null, null) {
+        }
+
         public PluginManager(IManager? manager, ILog? log) : base(manager, log) {
         }
 

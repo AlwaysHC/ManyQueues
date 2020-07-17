@@ -28,6 +28,9 @@ namespace NW.ManyQueues {
     }
 
     public class PipelineManager: BaseManager, IPipelineManager {
+        public PipelineManager() : base(null, null) {
+        }
+
         public PipelineManager(IManager? manager, ILog? log) : base(manager, log) {
         }
 
