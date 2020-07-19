@@ -55,7 +55,7 @@ PM.LoadPlugins<IPluginInterface>("FirstPlugin");
 
 ## ParallelPluginManager
 
-The same of PluginManager (you can use the same IPluginInterfaces) but it execute methods in parallel.
+The same of PluginManager (you can use the same IPluginInterfaces) but it executes methods in parallel.
 
 ## Data manager
 
