@@ -57,7 +57,7 @@ PM.LoadPlugins<IPluginInterface>("FirstPlugin");
 
 The same of PluginManager (you can use the same IPluginInterfaces) but it execute methods in parallel.
 
-## Pipeline manager
+## Data manager
 
 ### Implemente the IDataReader interface and define the type of object that it will manage
 ```C#
