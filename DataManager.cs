@@ -38,7 +38,7 @@ namespace NW.ManyQueues {
         public void SubscribeDataReader<TData>(string name, IDataReader<TData> dataReader) {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{name} {typeof(TData)}");
 
-            if (!_SubscribedDataReaderList.Any(SE => SE.Name == name && SE.DataReader.GetType() == dataReader.GetType())) {
+            if (!_SubscribedDataReaderList.Any(se => se.Name == name && se.DataReader.GetType() == dataReader.GetType())) {
                 _SubscribedDataReaderList.Add(new NameDataReaderMethod(name, dataReader, typeof(TData)));
 
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{name} {typeof(TData)} Subscribed");
@@ -51,7 +51,7 @@ namespace NW.ManyQueues {
             Type TO = typeof(IDataReader<TData>);
 
             foreach (Assembly Ass in AppDomain.CurrentDomain.GetAssemblies()) {
-                foreach (Type Type in Ass.GetTypes().Where(T => T.IsClass && TO.IsAssignableFrom(T))) {
+                foreach (Type Type in Ass.GetTypes().Where(t => t.IsClass && TO.IsAssignableFrom(t))) {
                     MethodInfo? MethodAutoLoad = Type.GetMethod(nameof(IDataReader.AutoLoad));
                     if ((bool)(MethodAutoLoad?.Invoke(null, null) ?? true)) {
                         IDataReader<TData>? Subscriber = Type.GetConstructors()[0].GetParameters().Length == 1
@@ -100,7 +100,7 @@ namespace NW.ManyQueues {
         }
 
         public void EndBatchWrite(string name, bool allData = true) {
-            foreach (NameDataReaderMethod NDRM in _SubscribedDataReaderList.Where(SDR => SDR.Name == name)) {
+            foreach (NameDataReaderMethod NDRM in _SubscribedDataReaderList.Where(sdr => sdr.Name == name)) {
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{name} {allData} Start");
 
                 object DataList = (allData ? NDRM.MethodCast : NDRM.MethodOfType).Invoke(null, new object[] { _DataList[name] })!;
@@ -111,14 +111,14 @@ namespace NW.ManyQueues {
             DeleteData(name);
         }
 
-        private bool MethodToSkip(MethodInfo Method) {
+        private bool MethodToSkip(MethodInfo method) {
             foreach (MethodInfo MethodIDataReader in typeof(IDataReader).GetMethods()) {
-                if (Method.Name == MethodIDataReader.Name) {
+                if (method.Name == MethodIDataReader.Name) {
                     return true;
                 }
             }
             foreach (MethodInfo MethodObject in typeof(object).GetMethods()) {
-                if (Method.Name == MethodObject.Name) {
+                if (method.Name == MethodObject.Name) {
                     return true;
                 }
             }

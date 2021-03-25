@@ -44,7 +44,7 @@ namespace NW.ManyQueues {
             }
 
             foreach (Type Type in stepsSequence) {
-                IPipeline<TToken>? Pipeline = steps?.FirstOrDefault(S => S.GetType().IsAssignableFrom(typeof(IPipeline<TToken>)));
+                IPipeline<TToken>? Pipeline = steps?.FirstOrDefault(s => s.GetType().IsAssignableFrom(typeof(IPipeline<TToken>)));
                 if (Pipeline == null) {
                     Pipeline = Type.GetConstructors()[0].GetParameters().Length == 1
                         ? (IPipeline<TToken>?)Activator.CreateInstance(Type, this)
@@ -245,19 +245,19 @@ namespace NW.ManyQueues {
             return R;
         }
 
-        private bool MethodToSkip(MethodInfo Method) {
+        private bool MethodToSkip(MethodInfo method) {
             foreach (MethodInfo MethodIPipeline in typeof(IPipeline<object>).GetMethods()) {
-                if (Method.Name == MethodIPipeline.Name) {
+                if (method.Name == MethodIPipeline.Name) {
                     return true;
                 }
             }
             foreach (MethodInfo MethodIPipeline in typeof(IPipeline).GetMethods()) {
-                if (Method.Name == MethodIPipeline.Name) {
+                if (method.Name == MethodIPipeline.Name) {
                     return true;
                 }
             }
             foreach (MethodInfo MethodObject in typeof(object).GetMethods()) {
-                if (Method.Name == MethodObject.Name) {
+                if (method.Name == MethodObject.Name) {
                     return true;
                 }
             }

@@ -311,7 +311,7 @@ namespace NW.ManyQueues {
         private IList<MethodPluginPriortity<TCaller>> GetMethodListToCall<TCaller>(TCaller caller, string name) {
             IList<MethodPluginPriortity<TCaller>> R = new List<MethodPluginPriortity<TCaller>>();
 
-            foreach (NamePlugin NamePlugin in _SubscribedPluginList.Where(SP => SP.Name == name)) {
+            foreach (NamePlugin NamePlugin in _SubscribedPluginList.Where(sp => sp.Name == name)) {
                 if (!_DeclaredPluginList.Any(de => de.Key == name)) {
                     continue;
                 }
@@ -328,14 +328,14 @@ namespace NW.ManyQueues {
             return R;
         }
 
-        private bool MethodToSkip(MethodInfo Method) {
+        private bool MethodToSkip(MethodInfo method) {
             foreach (MethodInfo MethodIPlugin in typeof(IPlugin).GetMethods()) {
-                if (Method.Name == MethodIPlugin.Name) {
+                if (method.Name == MethodIPlugin.Name) {
                     return true;
                 }
             }
             foreach (MethodInfo MethodObject in typeof(object).GetMethods()) {
-                if (Method.Name == MethodObject.Name) {
+                if (method.Name == MethodObject.Name) {
                     return true;
                 }
             }
@@ -345,7 +345,7 @@ namespace NW.ManyQueues {
         public void SubscribePlugin<TPlugin>(string name, TPlugin pluginClass) where TPlugin : IPlugin {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{name} {typeof(TPlugin)}");
 
-            if (!_SubscribedPluginList.Any(SP => SP.Name == name && SP.Plugin.GetType() == pluginClass.GetType())) {
+            if (!_SubscribedPluginList.Any(sp => sp.Name == name && sp.Plugin.GetType() == pluginClass.GetType())) {
                 _SubscribedPluginList.Add(new NamePlugin(name, pluginClass));
 
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{name} {typeof(TPlugin)} Subscribed");
@@ -360,7 +360,7 @@ namespace NW.ManyQueues {
             Type TO = typeof(TPlugin);
 
             foreach (Assembly Ass in AppDomain.CurrentDomain.GetAssemblies()) {
-                foreach (Type Type in Ass.GetTypes().Where(T => T.IsClass && TO.IsAssignableFrom(T))) {
+                foreach (Type Type in Ass.GetTypes().Where(t => t.IsClass && TO.IsAssignableFrom(t))) {
                     MethodInfo? MethodAutoLoad = Type.GetMethod(nameof(IPlugin.AutoLoad));
                     if ((bool)(MethodAutoLoad?.Invoke(null, null) ?? true)) {
                         IPlugin? Subscriber = Type.GetConstructors()[0].GetParameters().Length == 1

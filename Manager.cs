@@ -29,7 +29,7 @@ namespace NW.ManyQueues {
             if (expr.Body is MemberExpression CorpoExpr) {
                 string Name = CorpoExpr.Member.Name;
                 if (Name.StartsWith("_")) {
-                    Name = Name.Substring(1);
+                    Name = Name[1..];
                 }
 
                 return ReadConf<TValue>(Name);
@@ -45,7 +45,7 @@ namespace NW.ManyQueues {
 
         public void WriteConf<TValue>(string name, TValue value) {
             if (name.StartsWith("_")) {
-                name = name.Substring(1);
+                name = name[1..];
             }
 
             _Conf[name] = value!;

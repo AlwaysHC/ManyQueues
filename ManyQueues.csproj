@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>NW.ManyQueues</RootNamespace>
     <Authors>Mirko Sacripanti</Authors>
     <Company>NextWare di Mirko Sacripanti</Company>

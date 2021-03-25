@@ -8,7 +8,7 @@ namespace NW.ManyQueues.Test {
     class TestPluginConstructor: IPluginStep1 {
         private readonly IPluginManager _SM;
 
-        public TestPluginConstructor(IParallelPluginManager subscriptionManager) {
+        public TestPluginConstructor() {
             _SM = new PluginManager(null, null);
         }
 

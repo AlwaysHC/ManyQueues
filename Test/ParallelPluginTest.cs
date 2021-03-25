@@ -27,7 +27,7 @@ namespace NW.ManyQueues.Test {
             _PM.DeclarePlugin<IPluginStep1>(nameof(IPluginStep1));
 
 
-            TestPluginConstructor TP = new TestPluginConstructor(_PM);
+            TestPluginConstructor TP = new TestPluginConstructor();
             _PM.SubscribePlugin(nameof(IPluginStep1), TP);
 
             IList<FirePluginResult> R = _PM.FirePlugin(this, nameof(IPluginStep1), 1);
