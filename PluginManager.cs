@@ -41,10 +41,10 @@ namespace NW.ManyQueues {
         bool DeclarePlugin<TPlugin>(string name) where TPlugin : IPlugin;
         void SubscribePlugin<TPlugin>(string name, TPlugin pluginClass) where TPlugin : IPlugin;
         void LoadPlugins<TPlugin>(string name) where TPlugin : IPlugin;
-        FirePluginResult? FirePlugin<TCaller, TReturn>(TCaller caller, string name, out IList<PluginReturn<TReturn>> returns);
-        FirePluginResult? FirePlugin<TCaller, TReturn, TParam1>(TCaller caller, string name, TParam1 param1, out IList<PluginReturn<TReturn>> returns);
-        FirePluginResult? FirePlugin<TCaller, TReturn, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2, out IList<PluginReturn<TReturn>> returns);
-        FirePluginResult? FirePlugin<TCaller, TReturn, TParam1, TParam2, TParam3>(TCaller caller, string name, TParam1 param1, TParam2 param2, TParam3 param3, out IList<PluginReturn<TReturn>> returns);
+        FirePluginResult? FirePlugin<TCaller, TReturn>(TCaller caller, string name, out IReadOnlyList<PluginReturn<TReturn>> returns);
+        FirePluginResult? FirePlugin<TCaller, TReturn, TParam1>(TCaller caller, string name, TParam1 param1, out IReadOnlyList<PluginReturn<TReturn>> returns);
+        FirePluginResult? FirePlugin<TCaller, TReturn, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2, out IReadOnlyList<PluginReturn<TReturn>> returns);
+        FirePluginResult? FirePlugin<TCaller, TReturn, TParam1, TParam2, TParam3>(TCaller caller, string name, TParam1 param1, TParam2 param2, TParam3 param3, out IReadOnlyList<PluginReturn<TReturn>> returns);
         FirePluginResult? FirePlugin<TCaller>(TCaller caller, string name);
         FirePluginResult? FirePlugin<TCaller, TParam1>(TCaller caller, string name, TParam1 param1);
         FirePluginResult? FirePlugin<TCaller, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2);
@@ -92,7 +92,7 @@ namespace NW.ManyQueues {
         public PluginManager() : base(null, null) {
         }
 
-        public PluginManager(IManager? manager, ILog? log) : base(manager, log) {
+        public PluginManager(IManager? manager, ILog? log = null) : base(manager, log) {
         }
 
         private readonly IList<NamePlugin> _SubscribedPluginList = new List<NamePlugin>();
@@ -104,10 +104,10 @@ namespace NW.ManyQueues {
             return _DeclaredPluginList.TryAdd(name, typeof(TPlugin));
         }
 
-        public FirePluginResult? FirePlugin<TCaller, TReturn>(TCaller caller, string name, out IList<PluginReturn<TReturn>> returns) {
+        public FirePluginResult? FirePlugin<TCaller, TReturn>(TCaller caller, string name, out IReadOnlyList<PluginReturn<TReturn>> returns) {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} Start");
 
-            IList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
+            IReadOnlyList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
 
             FirePluginResult? R = null;
             returns = new List<PluginReturn<TReturn>>();
@@ -115,7 +115,7 @@ namespace NW.ManyQueues {
             foreach (MethodPluginPriortity<TCaller> MPP in MethodListToCall) {
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} Start");
 
-                returns.Add(new PluginReturn<TReturn>(MPP.Plugin.GetType().Name, (TReturn)MPP.Method.Invoke(MPP.Plugin, null)!));
+                ((List<PluginReturn<TReturn>>)returns).Add(new PluginReturn<TReturn>(MPP.Plugin.GetType().Name, (TReturn)MPP.Method.Invoke(MPP.Plugin, null)!));
 
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} End");
 
@@ -130,10 +130,10 @@ namespace NW.ManyQueues {
             return R;
         }
 
-        public FirePluginResult? FirePlugin<TCaller, TReturn, TParam1>(TCaller caller, string name, TParam1 param1, out IList<PluginReturn<TReturn>> returns) {
+        public FirePluginResult? FirePlugin<TCaller, TReturn, TParam1>(TCaller caller, string name, TParam1 param1, out IReadOnlyList<PluginReturn<TReturn>> returns) {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} Start");
 
-            IList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
+            IReadOnlyList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
 
             FirePluginResult? R = null;
             returns = new List<PluginReturn<TReturn>>();
@@ -141,33 +141,7 @@ namespace NW.ManyQueues {
             foreach (MethodPluginPriortity<TCaller> MPP in MethodListToCall) {
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} Start");
 
-                returns.Add(new PluginReturn<TReturn>(MPP.Plugin.GetType().Name, (TReturn)MPP.Method.Invoke(MPP.Plugin, new object[] { param1! })!));
-            
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} End");
-
-                R = (FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { R! });
-                if (R != null && R.Blocking) {
-                    break;
-                }
-            }
-
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} End - {R?.Blocking} {R?.Error} {R?.Message}");
-
-            return R;
-        }
-
-        public FirePluginResult? FirePlugin<TCaller, TReturn, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2, out IList<PluginReturn<TReturn>> returns) {
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} Start");
-
-            IList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
-
-            FirePluginResult? R = null;
-            returns = new List<PluginReturn<TReturn>>();
-
-            foreach (MethodPluginPriortity<TCaller> MPP in MethodListToCall) {
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} Start");
-
-                returns.Add(new PluginReturn<TReturn>(MPP.Plugin.GetType().Name, (TReturn)MPP.Method.Invoke(MPP.Plugin, new object[] { param1!, param2! })!));
+                ((List<PluginReturn<TReturn>>)returns).Add(new PluginReturn<TReturn>(MPP.Plugin.GetType().Name, (TReturn)MPP.Method.Invoke(MPP.Plugin, new object[] { param1! })!));
 
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} End");
 
@@ -182,10 +156,10 @@ namespace NW.ManyQueues {
             return R;
         }
 
-        public FirePluginResult? FirePlugin<TCaller, TReturn, TParam1, TParam2, TParam3>(TCaller caller, string name, TParam1 param1, TParam2 param2, TParam3 param3, out IList<PluginReturn<TReturn>> returns) {
+        public FirePluginResult? FirePlugin<TCaller, TReturn, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2, out IReadOnlyList<PluginReturn<TReturn>> returns) {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} Start");
 
-            IList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
+            IReadOnlyList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
 
             FirePluginResult? R = null;
             returns = new List<PluginReturn<TReturn>>();
@@ -193,7 +167,33 @@ namespace NW.ManyQueues {
             foreach (MethodPluginPriortity<TCaller> MPP in MethodListToCall) {
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} Start");
 
-                returns.Add(new PluginReturn<TReturn>(MPP.Plugin.GetType().Name, (TReturn)MPP.Method.Invoke(MPP.Plugin, new object[] { param1!, param2!, param3! })!));
+                ((List<PluginReturn<TReturn>>)returns).Add(new PluginReturn<TReturn>(MPP.Plugin.GetType().Name, (TReturn)MPP.Method.Invoke(MPP.Plugin, new object[] { param1!, param2! })!));
+
+                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} End");
+
+                R = (FirePluginResult?)MPP.MethodGetResult.Invoke(MPP.Plugin, new object[] { R! });
+                if (R != null && R.Blocking) {
+                    break;
+                }
+            }
+
+            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} End - {R?.Blocking} {R?.Error} {R?.Message}");
+
+            return R;
+        }
+
+        public FirePluginResult? FirePlugin<TCaller, TReturn, TParam1, TParam2, TParam3>(TCaller caller, string name, TParam1 param1, TParam2 param2, TParam3 param3, out IReadOnlyList<PluginReturn<TReturn>> returns) {
+            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} Start");
+
+            IReadOnlyList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
+
+            FirePluginResult? R = null;
+            returns = new List<PluginReturn<TReturn>>();
+
+            foreach (MethodPluginPriortity<TCaller> MPP in MethodListToCall) {
+                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} Start");
+
+                ((List<PluginReturn<TReturn>>)returns).Add(new PluginReturn<TReturn>(MPP.Plugin.GetType().Name, (TReturn)MPP.Method.Invoke(MPP.Plugin, new object[] { param1!, param2!, param3! })!));
 
                 Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Plugin.GetType().Name} End");
 
@@ -211,7 +211,7 @@ namespace NW.ManyQueues {
         public FirePluginResult? FirePlugin<TCaller>(TCaller caller, string name) {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} Start");
 
-            IList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
+            IReadOnlyList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
 
             FirePluginResult? R = null;
 
@@ -236,7 +236,7 @@ namespace NW.ManyQueues {
         public FirePluginResult? FirePlugin<TCaller, TParam1>(TCaller caller, string name, TParam1 param1) {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} Start");
 
-            IList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
+            IReadOnlyList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
 
             FirePluginResult? R = null;
 
@@ -261,7 +261,7 @@ namespace NW.ManyQueues {
         public FirePluginResult? FirePlugin<TCaller, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2) {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} Start");
 
-            IList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
+            IReadOnlyList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
 
             FirePluginResult? R = null;
 
@@ -286,7 +286,7 @@ namespace NW.ManyQueues {
         public FirePluginResult? FirePlugin<TCaller, TParam1, TParam2, TParam3>(TCaller caller, string name, TParam1 param1, TParam2 param2, TParam3 param3) {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} Start");
 
-            IList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
+            IReadOnlyList<MethodPluginPriortity<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).OrderBy(mp => mp.Priority).ToList();
 
             FirePluginResult? R = null;
 
@@ -308,7 +308,7 @@ namespace NW.ManyQueues {
             return R;
         }
 
-        private IList<MethodPluginPriortity<TCaller>> GetMethodListToCall<TCaller>(TCaller caller, string name) {
+        private IReadOnlyList<MethodPluginPriortity<TCaller>> GetMethodListToCall<TCaller>(TCaller caller, string name) {
             IList<MethodPluginPriortity<TCaller>> R = new List<MethodPluginPriortity<TCaller>>();
 
             foreach (NamePlugin NamePlugin in _SubscribedPluginList.Where(sp => sp.Name == name)) {
@@ -325,10 +325,10 @@ namespace NW.ManyQueues {
                 }
             }
 
-            return R;
+            return (IReadOnlyList<MethodPluginPriortity<TCaller>>)R;
         }
 
-        private bool MethodToSkip(MethodInfo method) {
+        private static bool MethodToSkip(MethodInfo method) {
             foreach (MethodInfo MethodIPlugin in typeof(IPlugin).GetMethods()) {
                 if (method.Name == MethodIPlugin.Name) {
                     return true;

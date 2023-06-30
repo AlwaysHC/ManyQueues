@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Xunit;
 
 #nullable enable
@@ -12,27 +11,27 @@ namespace NW.ManyQueues.Test {
 
         [Fact]
         public void TestIn() {
-            TestPipelineStep2 TestPipelineStep2 = new TestPipelineStep2();
+            TestPipelineStep2 TestPipelineStep2 = new(2);
 
-            _PM.CreatePipeline("1_2_3", new Type[] { typeof(TestPipelineStep1), typeof(TestPipelineStep2), typeof(TestPipelineStep3) }, new IPipeline<Token>[] { TestPipelineStep2 });
+            _PM.CreatePipeline("1_2_3", new Type[] { typeof(TestPipelineStep1), typeof(TestPipelineStep2), typeof(TestPipelineStep3) }, TestPipelineStep2);
 
-            Token Token = new Token();
+            Token Token = new();
             int RPL = _PM.RunPipeline(this, "1_2_3", 10, Token);
 
-            Assert.True(Token.Number == 90);
-            Assert.True(RPL == 3);
+            Assert.Equal(190, Token.Number);
+            Assert.Equal(3, RPL);
         }
 
         [Fact]
         public void TestOut() {
-            TestPipelineStep2 TestPipelineStep2 = new TestPipelineStep2();
+            TestPipelineStep2 TestPipelineStep2 = new(2);
 
-            _PM.CreatePipeline("1_2_3", new Type[] { typeof(TestPipelineStep1), typeof(TestPipelineStep2), typeof(TestPipelineStep3) }, new IPipeline<Token>[] { TestPipelineStep2 });
+            _PM.CreatePipeline("1_2_3", new Type[] { typeof(TestPipelineStep1), typeof(TestPipelineStep2), typeof(TestPipelineStep3) }, TestPipelineStep2);
 
             int RPL = _PM.RunPipeline(this, "1_2_3", 20, out Token Token);
 
-            Assert.True(Token.Number == 380);
-            Assert.True(RPL == 3);
+            Assert.Equal(780, Token.Number);
+            Assert.Equal(3, RPL);
         }
     }
 }

@@ -15,7 +15,7 @@ namespace NW.ManyQueues {
     }
 
     public class Manager: IManager {
-        private readonly Dictionary<string, object> _Conf = new Dictionary<string, object>();
+        private readonly Dictionary<string, object> _Conf = new();
 
         public string ReadConf(string name) {
             return (string)_Conf[name];

@@ -16,7 +16,7 @@ namespace NW.ManyQueues {
     }
 
     public interface IPipelineManager: IManager {
-        bool CreatePipeline<TToken>(string name, Type[] stepsSequence, IPipeline<TToken>[]? steps = null) where TToken : class, new();
+        bool CreatePipeline<TToken>(string name, Type[] stepsSequence, params IPipeline<TToken>[] alreadyCreatedSteps) where TToken : class, new();
         int RunPipeline<TCaller, TToken>(TCaller caller, string name, out TToken token) where TToken : class, new();
         int RunPipeline<TCaller, TToken, TParam1>(TCaller caller, string name, TParam1 param1, out TToken token) where TToken : class, new();
         int RunPipeline<TCaller, TToken, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2, out TToken token) where TToken : class, new();
@@ -31,13 +31,13 @@ namespace NW.ManyQueues {
         public PipelineManager() : base(null, null) {
         }
 
-        public PipelineManager(IManager? manager, ILog? log) : base(manager, log) {
+        public PipelineManager(IManager? manager, ILog? log = null) : base(manager, log) {
         }
 
         private readonly IDictionary<string, IList<NamePipeline>> _PipelinesList = new Dictionary<string, IList<NamePipeline>>();
 
-        public bool CreatePipeline<TToken>(string name, Type[] stepsSequence, IPipeline<TToken>[]? steps = null) where TToken : class, new() {
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{name} {typeof(TToken)} {stepsSequence.Length} {steps?.Length}");
+        public bool CreatePipeline<TToken>(string name, Type[] stepsSequence, params IPipeline<TToken>[] alreadyCreatedSteps) where TToken : class, new() {
+            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{name} {typeof(TToken)} {stepsSequence.Length} {alreadyCreatedSteps?.Length}");
 
             if (!_PipelinesList.TryAdd(name, new List<NamePipeline>())) {
                 return false;
@@ -57,13 +57,13 @@ namespace NW.ManyQueues {
                 }
             }
 
-            return _PipelinesList[name].Count == stepsSequence.Count();
+            return _PipelinesList[name].Count == stepsSequence.Length;
         }
 
         public int RunPipeline<TCaller, TToken>(TCaller caller, string name, out TToken token) where TToken : class, new() {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
 
-            IList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
+            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
 
             token = new TToken();
 
@@ -85,7 +85,7 @@ namespace NW.ManyQueues {
         public int RunPipeline<TCaller, TToken, TParam1>(TCaller caller, string name, TParam1 param1, out TToken token) where TToken : class, new() {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
 
-            IList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
+            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
 
             token = new TToken();
 
@@ -107,7 +107,7 @@ namespace NW.ManyQueues {
         public int RunPipeline<TCaller, TToken, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2, out TToken token) where TToken : class, new() {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
 
-            IList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
+            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
 
             token = new TToken();
 
@@ -129,7 +129,7 @@ namespace NW.ManyQueues {
         public int RunPipeline<TCaller, TToken, TParam1, TParam2, TParam3>(TCaller caller, string name, TParam1 param1, TParam2 param2, TParam3 param3, out TToken token) where TToken : class, new() {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
 
-            IList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
+            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
 
             token = new TToken();
 
@@ -151,7 +151,7 @@ namespace NW.ManyQueues {
         public int RunPipeline<TCaller, TToken>(TCaller caller, string name, TToken token) where TToken : class {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
 
-            IList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
+            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
 
             foreach (MethodPipeline<TCaller> MPP in MethodListToCall) {
                 MPP.MethodSetToken.Invoke(MPP.Pipeline, new object[] { token });
@@ -171,7 +171,7 @@ namespace NW.ManyQueues {
         public int RunPipeline<TCaller, TToken, TParam1>(TCaller caller, string name, TParam1 param1, TToken token) where TToken : class {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
 
-            IList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
+            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
 
             foreach (MethodPipeline<TCaller> MPP in MethodListToCall) {
                 MPP.MethodSetToken.Invoke(MPP.Pipeline, new object[] { token });
@@ -191,7 +191,7 @@ namespace NW.ManyQueues {
         public int RunPipeline<TCaller, TToken, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2, TToken token) where TToken : class {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
 
-            IList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
+            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
 
             foreach (MethodPipeline<TCaller> MPP in MethodListToCall) {
                 MPP.MethodSetToken.Invoke(MPP.Pipeline, new object[] { token });
@@ -211,7 +211,7 @@ namespace NW.ManyQueues {
         public int RunPipeline<TCaller, TToken, TParam1, TParam2, TParam3>(TCaller caller, string name, TParam1 param1, TParam2 param2, TParam3 param3, TToken token) where TToken : class {
             Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
 
-            IList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
+            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
 
             foreach (MethodPipeline<TCaller> MPP in MethodListToCall) {
                 MPP.MethodSetToken.Invoke(MPP.Pipeline, new object[] { token });
@@ -228,7 +228,7 @@ namespace NW.ManyQueues {
             return MethodListToCall.Count;
         }
 
-        private IList<MethodPipeline<TCaller>> GetMethodListToCall<TCaller>(TCaller caller, string name) {
+        private IReadOnlyList<MethodPipeline<TCaller>> GetMethodListToCall<TCaller>(TCaller caller, string name) {
             IList<MethodPipeline<TCaller>> R = new List<MethodPipeline<TCaller>>();
 
             foreach (NamePipeline NamePipeline in _PipelinesList[name]) {
@@ -242,10 +242,10 @@ namespace NW.ManyQueues {
                 }
             }
 
-            return R;
+            return (IReadOnlyList<MethodPipeline<TCaller>>)R;
         }
 
-        private bool MethodToSkip(MethodInfo method) {
+        private static bool MethodToSkip(MethodInfo method) {
             foreach (MethodInfo MethodIPipeline in typeof(IPipeline<object>).GetMethods()) {
                 if (method.Name == MethodIPipeline.Name) {
                     return true;

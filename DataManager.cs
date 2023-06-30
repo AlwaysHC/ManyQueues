@@ -29,7 +29,7 @@ namespace NW.ManyQueues {
         public DataManager() : base(null, null) {
         }
 
-        public DataManager(IManager? manager, ILog? log) : base(manager, log) {
+        public DataManager(IManager? manager, ILog? log = null) : base(manager, log) {
         }
 
         private readonly IList<NameDataReaderMethod> _SubscribedDataReaderList = new List<NameDataReaderMethod>();
@@ -111,7 +111,7 @@ namespace NW.ManyQueues {
             DeleteData(name);
         }
 
-        private bool MethodToSkip(MethodInfo method) {
+        private static bool MethodToSkip(MethodInfo method) {
             foreach (MethodInfo MethodIDataReader in typeof(IDataReader).GetMethods()) {
                 if (method.Name == MethodIDataReader.Name) {
                     return true;

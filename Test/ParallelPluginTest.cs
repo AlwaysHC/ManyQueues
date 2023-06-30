@@ -16,7 +16,7 @@ namespace NW.ManyQueues.Test {
             _PM.DeclarePlugin<IPluginStep1>(nameof(IPluginStep1));
             _PM.LoadPlugins<IPluginStep1>(nameof(IPluginStep1));
 
-            IList<FirePluginResult> R = _PM.FirePlugin(this, nameof(IPluginStep1), 1);
+            IReadOnlyList<FirePluginResult> R = _PM.FirePlugin(this, nameof(IPluginStep1), 1);
 
             Assert.True(!R[0].Blocking);
         }
@@ -27,10 +27,10 @@ namespace NW.ManyQueues.Test {
             _PM.DeclarePlugin<IPluginStep1>(nameof(IPluginStep1));
 
 
-            TestPluginConstructor TP = new TestPluginConstructor();
+            TestPluginConstructor TP = new();
             _PM.SubscribePlugin(nameof(IPluginStep1), TP);
 
-            IList<FirePluginResult> R = _PM.FirePlugin(this, nameof(IPluginStep1), 1);
+            IReadOnlyList<FirePluginResult> R = _PM.FirePlugin(this, nameof(IPluginStep1), 1);
 
             Assert.True(R[0].Blocking);
         }

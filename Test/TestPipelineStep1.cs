@@ -6,7 +6,7 @@ namespace NW.ManyQueues.Test {
     }
 
     class TestPipelineStep1: IPipeline<Token> {
-        Token _Token = new Token();
+        Token _Token = new();
 
         public void SetCaller<T>(T caller) where T : class {
         }

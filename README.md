@@ -43,7 +43,7 @@ PM.SubscribePlugin("FirstPlugin", new PluginClass());
 ### Finally you can fire the plugin
 
 ```C#
-FirePluginResult? R = PM.FirePlugin(this, "FirstPlugin", 1, out IList<PluginReturn<bool>> Returns);
+FirePluginResult? R = PM.FirePlugin(this, "FirstPlugin", 1, out IReadOnlyList<PluginReturn<bool>> Returns);
 ```
 
 ### You can do the same using reflection and LoadPlugins method. It will declare and subscribe all plugins that implement IPluginInterface interface
