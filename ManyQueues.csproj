@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <RootNamespace>NW.ManyQueues</RootNamespace>
     <Authors>Mirko Sacripanti</Authors>
-    <Company>NextWare di Mirko Sacripanti</Company>
-    <Copyright>2020</Copyright>
-    <AssemblyVersion>2007.19.3.1</AssemblyVersion>
-    <FileVersion>2007.19.3.1</FileVersion>
-    <Version>2007.19.3.1</Version>
+    <Company>Mirko Sacripanti</Company>
+    <Copyright>2023</Copyright>
+    <AssemblyVersion>2306.30.4.1</AssemblyVersion>
+    <FileVersion>2306.30.4.1</FileVersion>
+    <Version>2306.30.4.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
