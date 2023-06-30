@@ -8,7 +8,14 @@
     <Copyright>2023</Copyright>
     <AssemblyVersion>2306.30.4.1</AssemblyVersion>
     <FileVersion>2306.30.4.1</FileVersion>
-    <Version>2306.30.4.1</Version>
+    <Version>230630.4.1</Version>
+    <Title>Solve many problems using interfaces, generics, reflection and queues</Title>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <IncludeSymbols>True</IncludeSymbols>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/AlwaysHC/ManyQueues/</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,4 +24,7 @@
     <None Remove="Test\**" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
 </Project>
