@@ -1,19 +1,18 @@
 ﻿#nullable enable
 
 namespace NW.ManyQueues.Test {
-    class TestPipelineStep2: IPipeline<Token> {
-        Token _Token = new();
-        readonly int _Factor;
+    class Token {
+        public int Number = 0;
+    }
 
-        public TestPipelineStep2(int factor) {
-            _Factor = factor;
-        }
+    class TestPipelineStepAdd: IPipeline<Token> {
+        Token _Token = new();
 
         public void SetCaller<T>(T caller) where T : class {
         }
 
         public void Execute1(int number) {
-            _Token.Number *= number * _Factor;
+            _Token.Number += number;
         }
 
         public void SetToken(Token token) {

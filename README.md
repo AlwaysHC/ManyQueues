@@ -137,18 +137,18 @@ class TestPipelineStep1: IPipeline<Token> {
 
 ```C#
 IPipelineManager _PM = new PipelineManager();
-PM.CreatePipeline("1_2_3", new Type[] { typeof(TestPipelineStep1), typeof(TestPipelineStep2), typeof(TestPipelineStep3) }, null);
+PM.CreatePipeline(new Type[] { typeof(TestPipelineStep1), typeof(TestPipelineStep2), typeof(TestPipelineStep3) }, null);
 ```
 
 ### You can run the pipeline passing a pre created Token
 
 ```C#
 Token Token = new Token();
-PM.RunPipeline(this, "1_2_3", 10, Token);
+PM.RunPipeline(this, Token, 10);
 ```
 
 ### Or wait that the pipeline will create that for you
 
 ```C#
-PM.RunPipeline(this, "1_2_3", 20, out Token Token);
+PM.RunPipeline(this, out Token Token, 20);
 ```

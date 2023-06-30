@@ -11,20 +11,25 @@ namespace NW.ManyQueues {
         public static bool AutoLoad() => true;
     }
 
-    public interface IPipeline<TToken>: IPipeline where TToken : class {
+    public interface IPipeline<TToken>: IPipeline where TToken : class, new() {
         public void SetToken(TToken token);
     }
 
+    public interface IFluentPipelineManager<TToken> where TToken : class, new() {
+        IFluentPipelineManager<TToken> AddStep<TPipeline>() where TPipeline : IPipeline<TToken>;
+        IFluentPipelineManager<TToken> AddStep(IPipeline<TToken> alreadyCreatedStep);
+        IFluentPipelineManager<TToken> AddSteps(params Type[] steps);
+        IFluentPipelineManager<TToken> AddSteps(params IPipeline<TToken>[] alreadyCreatedSteps);
+    }
+
     public interface IPipelineManager: IManager {
-        bool CreatePipeline<TToken>(string name, Type[] stepsSequence, params IPipeline<TToken>[] alreadyCreatedSteps) where TToken : class, new();
-        int RunPipeline<TCaller, TToken>(TCaller caller, string name, out TToken token) where TToken : class, new();
-        int RunPipeline<TCaller, TToken, TParam1>(TCaller caller, string name, TParam1 param1, out TToken token) where TToken : class, new();
-        int RunPipeline<TCaller, TToken, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2, out TToken token) where TToken : class, new();
-        int RunPipeline<TCaller, TToken, TParam1, TParam2, TParam3>(TCaller caller, string name, TParam1 param1, TParam2 param2, TParam3 param3, out TToken token) where TToken : class, new();
-        int RunPipeline<TCaller, TToken>(TCaller caller, string name, TToken token) where TToken : class;
-        int RunPipeline<TCaller, TToken, TParam1>(TCaller caller, string name, TParam1 param1, TToken token) where TToken : class;
-        int RunPipeline<TCaller, TToken, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2, TToken token) where TToken : class;
-        int RunPipeline<TCaller, TToken, TParam1, TParam2, TParam3>(TCaller caller, string name, TParam1 param1, TParam2 param2, TParam3 param3, TToken token) where TToken : class;
+        bool CreatePipeline<TToken>(Type[] stepsSequence, params IPipeline<TToken>[] alreadyCreatedSteps) where TToken : class, new();
+        IFluentPipelineManager<TToken> AddStep<TToken, TPipeline>() where TPipeline : IPipeline<TToken> where TToken : class, new();
+        IFluentPipelineManager<TToken> AddStep<TToken>(IPipeline<TToken> alreadyCreatedStep) where TToken : class, new();
+        IFluentPipelineManager<TToken> AddSteps<TToken>(params Type[] steps) where TToken : class, new();
+        IFluentPipelineManager<TToken> AddSteps<TToken>(params IPipeline<TToken>[] alreadyCreatedSteps) where TToken : class, new();
+        int RunPipeline<TCaller, TToken>(TCaller caller, out TToken token, params object?[]? @params) where TToken : class, new();
+        int RunPipeline<TCaller, TToken>(TCaller caller, TToken token, params object?[]? @params) where TToken : class;
     }
 
     public class PipelineManager: BaseManager, IPipelineManager {
@@ -36,194 +41,141 @@ namespace NW.ManyQueues {
 
         private readonly IDictionary<string, IList<NamePipeline>> _PipelinesList = new Dictionary<string, IList<NamePipeline>>();
 
-        public bool CreatePipeline<TToken>(string name, Type[] stepsSequence, params IPipeline<TToken>[] alreadyCreatedSteps) where TToken : class, new() {
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{name} {typeof(TToken)} {stepsSequence.Length} {alreadyCreatedSteps?.Length}");
+        private static string TokenName<TToken>()
+            => typeof(TToken).AssemblyQualifiedName ?? typeof(TToken).FullName ?? typeof(TToken).Name;
 
-            if (!_PipelinesList.TryAdd(name, new List<NamePipeline>())) {
+        public bool CreatePipeline<TToken>(Type[] stepsSequence, params IPipeline<TToken>[] alreadyCreatedSteps) where TToken : class, new() {
+            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{TokenName<TToken>()} {typeof(TToken)} {stepsSequence.Length} {alreadyCreatedSteps?.Length}");
+
+            if (!_PipelinesList.TryAdd(TokenName<TToken>(), new List<NamePipeline>())) {
                 return false;
             }
 
             foreach (Type Type in stepsSequence) {
                 IPipeline<TToken>? Pipeline = alreadyCreatedSteps?.FirstOrDefault(s => s.GetType().IsAssignableFrom(Type));
                 if (Pipeline == null) {
-                    Pipeline = Type.GetConstructors()[0].GetParameters().Length == 1
-                        ? (IPipeline<TToken>?)Activator.CreateInstance(Type, this)
-                        : (IPipeline<TToken>?)Activator.CreateInstance(Type);
-
-                    Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{name} {Type} created");
+                    try {
+                        Pipeline = Type.GetConstructors()[0].GetParameters().Length == 1
+                            ? (IPipeline<TToken>?)Activator.CreateInstance(Type, this)
+                            : (IPipeline<TToken>?)Activator.CreateInstance(Type);
+                        Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{TokenName<TToken>()} {Type} created");
+                    }
+                    catch {
+                    }
                 }
                 if (Pipeline != null) {
-                    _PipelinesList[name].Add(new NamePipeline(name, Pipeline));
+                    _PipelinesList[TokenName<TToken>()].Add(new NamePipeline(TokenName<TToken>(), Pipeline));
                 }
             }
 
-            return _PipelinesList[name].Count == stepsSequence.Length;
+            return _PipelinesList[TokenName<TToken>()].Count == stepsSequence.Length;
         }
 
-        public int RunPipeline<TCaller, TToken>(TCaller caller, string name, out TToken token) where TToken : class, new() {
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
+        public IFluentPipelineManager<TToken> AddStep<TToken, TPipeline>() where TPipeline : IPipeline<TToken> where TToken : class, new()
+            => AddSteps<TToken>(typeof(TPipeline));
 
-            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
+        public IFluentPipelineManager<TToken> AddStep<TToken>(IPipeline<TToken> alreadyCreatedStep) where TToken : class, new()
+            => AddSteps(alreadyCreatedStep);
+
+        public IFluentPipelineManager<TToken> AddSteps<TToken>(params Type[] steps) where TToken : class, new() {
+            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{TokenName<TToken>()} {steps?.Length}");
+
+            _PipelinesList.TryAdd(TokenName<TToken>(), new List<NamePipeline>());
+
+            if (steps != null) {
+                foreach (Type Type in steps) {
+                    IPipeline<TToken>? Pipeline = null;
+                    try {
+                        Pipeline = Type.GetConstructors()[0].GetParameters().Length == 1
+                            ? (IPipeline<TToken>?)Activator.CreateInstance(Type, this)
+                            : (IPipeline<TToken>?)Activator.CreateInstance(Type);
+                        Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{TokenName<TToken>()} {Type} created");
+                    }
+                    catch {
+                    }
+                    if (Pipeline != null) {
+                        _PipelinesList[TokenName<TToken>()].Add(new NamePipeline(TokenName<TToken>(), Pipeline));
+                    }
+                }
+            }
+
+            return new FluentPipelineManager<TToken>(this);
+        }
+
+        public IFluentPipelineManager<TToken> AddSteps<TToken>(params IPipeline<TToken>[] alreadyCreatedSteps) where TToken : class, new() {
+            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{TokenName<TToken>()} {typeof(TToken)} {alreadyCreatedSteps?.Length}");
+
+            _PipelinesList.TryAdd(TokenName<TToken>(), new List<NamePipeline>());
+
+            if (alreadyCreatedSteps != null) {
+                foreach (IPipeline<TToken> Pipeline in alreadyCreatedSteps) {
+                    _PipelinesList[TokenName<TToken>()].Add(new NamePipeline(TokenName<TToken>(), Pipeline));
+                }
+            }
+
+            return new FluentPipelineManager<TToken>(this);
+        }
+
+        public int RunPipeline<TCaller, TToken>(TCaller caller, out TToken token) where TToken : class, new() {
+            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {TokenName<TToken>()} {typeof(TToken)} Start");
+
+            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, TokenName<TToken>()).ToList();
 
             token = new TToken();
 
             foreach (MethodPipeline<TCaller> MPP in MethodListToCall) {
                 MPP.MethodSetToken.Invoke(MPP.Pipeline, new object[] { token });
 
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} Start");
+                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {TokenName<TToken>()} {MPP.Pipeline.GetType()}.{MPP.Method.Name} Start");
 
                 MPP.Method.Invoke(MPP.Pipeline, null);
 
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} End");
+                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {TokenName<TToken>()} {MPP.Pipeline.GetType()}.{MPP.Method.Name} End");
             }
 
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} End");
+            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {TokenName<TToken>()} {typeof(TToken)} End");
 
             return MethodListToCall.Count;
         }
 
-        public int RunPipeline<TCaller, TToken, TParam1>(TCaller caller, string name, TParam1 param1, out TToken token) where TToken : class, new() {
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
+        public int RunPipeline<TCaller, TToken>(TCaller caller, out TToken token, params object?[]? @params) where TToken : class, new() {
+            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {TokenName<TToken>()} {typeof(TToken)} Start");
 
-            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
+            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, TokenName<TToken>()).ToList();
 
             token = new TToken();
 
             foreach (MethodPipeline<TCaller> MPP in MethodListToCall) {
                 MPP.MethodSetToken.Invoke(MPP.Pipeline, new object[] { token });
 
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} Start");
+                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {TokenName<TToken>()} {MPP.Pipeline.GetType()}.{MPP.Method.Name} Start");
 
-                MPP.Method.Invoke(MPP.Pipeline, new object[] { param1! });
+                MPP.Method.Invoke(MPP.Pipeline, @params);
 
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} End");
+                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {TokenName<TToken>()} {MPP.Pipeline.GetType()}.{MPP.Method.Name} End");
             }
 
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} End");
+            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {TokenName<TToken>()} {typeof(TToken)} End");
 
             return MethodListToCall.Count;
         }
 
-        public int RunPipeline<TCaller, TToken, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2, out TToken token) where TToken : class, new() {
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
+        public int RunPipeline<TCaller, TToken>(TCaller caller, TToken token, params object?[]? @params) where TToken : class {
+            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {TokenName<TToken>()} {typeof(TToken)} Start");
 
-            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
-
-            token = new TToken();
+            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, TokenName<TToken>()).ToList();
 
             foreach (MethodPipeline<TCaller> MPP in MethodListToCall) {
                 MPP.MethodSetToken.Invoke(MPP.Pipeline, new object[] { token });
 
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} Start");
+                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {TokenName<TToken>()} {MPP.Pipeline.GetType()}.{MPP.Method.Name} Start");
 
-                MPP.Method.Invoke(MPP.Pipeline, new object[] { param1!, param2! });
+                MPP.Method.Invoke(MPP.Pipeline, @params);
 
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} End");
+                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {TokenName<TToken>()} {MPP.Pipeline.GetType()}.{MPP.Method.Name} End");
             }
 
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} End");
-
-            return MethodListToCall.Count;
-        }
-
-        public int RunPipeline<TCaller, TToken, TParam1, TParam2, TParam3>(TCaller caller, string name, TParam1 param1, TParam2 param2, TParam3 param3, out TToken token) where TToken : class, new() {
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
-
-            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
-
-            token = new TToken();
-
-            foreach (MethodPipeline<TCaller> MPP in MethodListToCall) {
-                MPP.MethodSetToken.Invoke(MPP.Pipeline, new object[] { token });
-
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} Start");
-
-                MPP.Method.Invoke(MPP.Pipeline, new object[] { param1!, param2!, param3! });
-
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} End");
-            }
-
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} End");
-
-            return MethodListToCall.Count;
-        }
-
-        public int RunPipeline<TCaller, TToken>(TCaller caller, string name, TToken token) where TToken : class {
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
-
-            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
-
-            foreach (MethodPipeline<TCaller> MPP in MethodListToCall) {
-                MPP.MethodSetToken.Invoke(MPP.Pipeline, new object[] { token });
-
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} Start");
-
-                MPP.Method.Invoke(MPP.Pipeline, null);
-
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} End");
-            }
-
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} End");
-
-            return MethodListToCall.Count;
-        }
-
-        public int RunPipeline<TCaller, TToken, TParam1>(TCaller caller, string name, TParam1 param1, TToken token) where TToken : class {
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
-
-            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
-
-            foreach (MethodPipeline<TCaller> MPP in MethodListToCall) {
-                MPP.MethodSetToken.Invoke(MPP.Pipeline, new object[] { token });
-
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} Start");
-
-                MPP.Method.Invoke(MPP.Pipeline, new object[] { param1! });
-
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} End");
-            }
-
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} End");
-
-            return MethodListToCall.Count;
-        }
-
-        public int RunPipeline<TCaller, TToken, TParam1, TParam2>(TCaller caller, string name, TParam1 param1, TParam2 param2, TToken token) where TToken : class {
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
-
-            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
-
-            foreach (MethodPipeline<TCaller> MPP in MethodListToCall) {
-                MPP.MethodSetToken.Invoke(MPP.Pipeline, new object[] { token });
-
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} Start");
-
-                MPP.Method.Invoke(MPP.Pipeline, new object[] { param1!, param2! });
-
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} End");
-            }
-
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} End");
-
-            return MethodListToCall.Count;
-        }
-
-        public int RunPipeline<TCaller, TToken, TParam1, TParam2, TParam3>(TCaller caller, string name, TParam1 param1, TParam2 param2, TParam3 param3, TToken token) where TToken : class {
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} Start");
-
-            IReadOnlyList<MethodPipeline<TCaller>> MethodListToCall = GetMethodListToCall(caller, name).ToList();
-
-            foreach (MethodPipeline<TCaller> MPP in MethodListToCall) {
-                MPP.MethodSetToken.Invoke(MPP.Pipeline, new object[] { token });
-
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} Start");
-
-                MPP.Method.Invoke(MPP.Pipeline, new object[] { param1!, param2!, param3! });
-
-                Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {MPP.Pipeline.GetType()}.{MPP.Method.Name} End");
-            }
-
-            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {name} {typeof(TToken)} End");
+            Log.Log(MethodBase.GetCurrentMethod()!.Name, $"{typeof(TCaller)} {TokenName<TToken>()} {typeof(TToken)} End");
 
             return MethodListToCall.Count;
         }
@@ -304,6 +256,30 @@ namespace NW.ManyQueues {
                     namePipeline.IsSetCallerCalled = true;
                 }
             }
+        }
+    }
+
+    public class FluentPipelineManager<TToken>: IFluentPipelineManager<TToken> where TToken : class, new() {
+        private readonly IPipelineManager _PipelineManager;
+
+        public FluentPipelineManager(IPipelineManager pipelineManager) {
+            _PipelineManager = pipelineManager;
+        }
+
+        public IFluentPipelineManager<TToken> AddStep<TPipeline>() where TPipeline : IPipeline<TToken>
+            => AddSteps(typeof(TPipeline));
+
+        public IFluentPipelineManager<TToken> AddStep(IPipeline<TToken> alreadyCreatedStep)
+            => AddSteps(alreadyCreatedStep);
+
+        public IFluentPipelineManager<TToken> AddSteps(params Type[] steps) {
+            _PipelineManager.AddSteps<TToken>(steps);
+            return this;
+        }
+
+        public IFluentPipelineManager<TToken> AddSteps(params IPipeline<TToken>[] alreadyCreatedSteps) {
+            _PipelineManager.AddSteps(alreadyCreatedSteps);
+            return this;
         }
     }
 }
