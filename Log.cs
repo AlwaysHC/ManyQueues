@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 
 #nullable enable
@@ -10,8 +9,12 @@ namespace NW.ManyQueues {
     }
 
     public class LogFile: ILog {
+        static readonly object LOCK = new();
+
         void ILog.Log(string method, string log) {
-            File.AppendAllLines("ManyQueues.log", new List<string>() { $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {method}: {log}" });
+            lock (LOCK) {
+                File.AppendAllText("ManyQueues.log", $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {method}: {log}{Environment.NewLine}" );
+            }
         }
     }
 
