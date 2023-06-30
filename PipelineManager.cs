@@ -44,7 +44,7 @@ namespace NW.ManyQueues {
             }
 
             foreach (Type Type in stepsSequence) {
-                IPipeline<TToken>? Pipeline = steps?.FirstOrDefault(s => s.GetType().IsAssignableFrom(typeof(IPipeline<TToken>)));
+                IPipeline<TToken>? Pipeline = alreadyCreatedSteps?.FirstOrDefault(s => s.GetType().IsAssignableFrom(Type));
                 if (Pipeline == null) {
                     Pipeline = Type.GetConstructors()[0].GetParameters().Length == 1
                         ? (IPipeline<TToken>?)Activator.CreateInstance(Type, this)
